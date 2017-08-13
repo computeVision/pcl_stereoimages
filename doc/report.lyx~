@@ -1,0 +1,522 @@
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\float_placement H
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 2cm
+\topmargin 3cm
+\rightmargin 2cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Documentation
+\end_layout
+
+\begin_layout Author
+Peter Lorenz, Ivona Jambrečić
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status collapsed
+
+\begin_layout Plain Layout
+// todo 
+\end_layout
+
+\begin_layout Plain Layout
+- to not just copy
+\end_layout
+
+\begin_layout Plain Layout
+- discuss important results and overvations 
+\end_layout
+
+\begin_layout Plain Layout
+- if you have to select any parameters justify your choices
+\end_layout
+
+\begin_layout Plain Layout
+- Label any plots
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\noindent
+This documentation provides a short introduction to our code, the ways we
+ have found to solve the given problem.
+ Basically, the problem is about to read in stereo images (6 pairs in sum)
+ and extract depth information of them.
+ This depth information is crucial to know in the final point cloud, where
+ the 2d point on the corresponding image pair is located in the 3d space.
+ The following enumaration describes our implementation in detail.
+\end_layout
+
+\begin_layout Section
+Keypoint Detection and Description 
+\end_layout
+
+\begin_layout Standard
+First of all, the image pairs are read in as numpy objects for further processin
+g.
+ Then, image masks for left and right image are created, which marks where
+ we should detect features.
+ For every pixel, which has a gray-value bigger than 250 (from a range 
+\begin_inset Formula $0...255$
+\end_inset
+
+) must be almost white or in other words it must be a highlight.
+ Moreover, all the neighbours (-5, +5) from the found highlighted pixel
+ are set to 0.
+ So it will only take the non-highlights.
+ Takeing this masks and the related image to compute the keypoints and descripto
+rs seperately.
+ The number of keypoints/descriptors depending on the upper bound 
+\emph on
+nfeatures
+\emph default
+, which we limited to 20.000 and a 
+\emph on
+contastThreshold
+\emph default
+ of 0.0001.
+ We tested those input values with the function 
+\emph on
+checkout_contrast(im_left, im_right)
+\emph default
+,
+\emph on
+ 
+\emph default
+which returns the best values by a maximum number of keypoints.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+sift = cv2.xfeatures2d.SIFT_create(nfeatures=20000, contrastThreshold=0.0001)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\noindent
+On the opencv page (
+\begin_inset CommandInset href
+LatexCommand href
+name "opencv.org"
+target "http://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/py_matcher/py_matcher.html"
+
+\end_inset
+
+) it is written that L2-Norm is good for SIFT, what we are currently using.
+ The second parameter 
+\emph on
+crossCheck
+\emph default
+ returns only those matches with value(i,j), such that i-th descriptor in
+ set A has j-th descriptor in set B as the best match and vice-versa.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename img/Figure_1.png
+	scale 40
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Matches
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Sparse Stereo Matching
+\end_layout
+
+\begin_layout Standard
+At this point, we know that we have rectified stereo images, that means
+ that y values of two corresponding matches should not differ up to some
+ few pixels.
+ Those matches are thrown away.
+ Another fact is that the difference of x-values of two corresponding matches
+ can not be negative.
+ A negative means that they are situated behind the camera.
+ So, those matches are thrown away as well.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename img/Figure_2.png
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Stereo Matching
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\noindent
+With those sorted matches we can calclulate the depth from disparity.
+ We need homogenous coordinates of the left image to extend the image coordinate
+s vector by 1.
+ 
+\end_layout
+
+\begin_layout Standard
+\noindent
+\begin_inset Formula 
+\[
+hom_{left}=\left[\begin{array}{c}
+u\\
+v\\
+1
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\noindent
+The depth value z is calculated with the following formula:
+\end_layout
+
+\begin_layout Standard
+\noindent
+\begin_inset Formula 
+\[
+z=\frac{f\cdot b}{x_{L}-x_{R}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\noindent
+where 
+\begin_inset Formula $f$
+\end_inset
+
+ is the focal length from the given matrix 
+\begin_inset Formula $K$
+\end_inset
+
+, 
+\begin_inset Formula $b$
+\end_inset
+
+ is the distance from both cameras and 
+\begin_inset Formula $x_{L}$
+\end_inset
+
+ as well 
+\begin_inset Formula $x_{R}$
+\end_inset
+
+ are the x-values of the left and corresponding right keypoint.
+ The view ray must be calculated:
+\end_layout
+
+\begin_layout Standard
+\noindent
+\begin_inset Formula 
+\[
+ray=K^{-1}\circ hom_{left}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\noindent
+With this ray with transform the image coordinates to perspective coordinates.
+\end_layout
+
+\begin_layout Section
+Forward Matching
+\end_layout
+
+\begin_layout Standard
+Forward matching is in principle the brute force matcher, but with knn (k
+ nearest neighbour).
+ In our case, we take the k=2 (proposed by David Lowe) best matches, so
+ that we can apply the ratio test.
+ We multiply the second best distance with a threshold (0.75) and look the
+ first best match distance is still smaller.
+ So we can filter out the false second best matches.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename img/Figure_3.png
+	scale 70
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Forward Matching
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Rigid Motion Estimation and RANSAC
+\end_layout
+
+\begin_layout Standard
+The ransac is implemented and calls in every loop the rigid motion estimation
+ to recompute rotation (R) and translation (t).
+ Within a big loop, we take 6 random points from both point clouds and compute
+ the translation and rotation with them.
+ 6 points are needed, because of the degree of freedom (DoF): 3 rotation
+ and 3 translation.
+ In the function 
+\emph on
+rigid_motion(X, Y) 
+\emph default
+we calculating the center (center of mass 
+\begin_inset Formula $\frac{\sum_{i}p_{i}}{\#p}$
+\end_inset
+
+) of each point cloud and then the covariance matrix 
+\begin_inset Formula $cov=(X-\bar{X})(Y-\bar{Y})^{T}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+\noindent
+After calculation the 
+\begin_inset Formula $U,s,V=svd(cov)$
+\end_inset
+
+, the rotation 
+\begin_inset Formula $R=V\circ U$
+\end_inset
+
+ and translation 
+\begin_inset Formula $t=\bar{X}-R\circ\bar{Y}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+\noindent
+Some error checks helped to found errors in previous tasks.
+ The rotation R and translation t can be verified by checking:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{array}{ccc}
+U^{T}\circ U=I, & V\circ V^{T}=I, & R\circ R^{T}=I\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\begin_layout Section
+Result 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Result 3D Point Cloud
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
