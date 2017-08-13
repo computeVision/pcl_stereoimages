@@ -1,5 +1,5 @@
 # Rigid Motion Estimation
-dsfsdaf
+Point Cloud Reproduction from Stereoimages.
 
 [![Build Status](https://travis-ci.org/tompollard/phd_thesis_markdown.svg?branch=master)](https://travis-ci.org/tompollard/phd_thesis_markdown)  
 
