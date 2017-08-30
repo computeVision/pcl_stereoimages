@@ -3,12 +3,12 @@ Point Cloud Reproduction from Stereoimages.
 
 [![Build Status](https://travis-ci.org/tompollard/phd_thesis_markdown.svg?branch=master)](https://travis-ci.org/tompollard/phd_thesis_markdown)  
 
-Source: https://github.com/computeVision/pcl_stereoimages/blob/master/doc/report.pdf
+Source: [Report]( https://github.com/computeVision/pcl_stereoimages/blob/master/doc/report.pdf)
 
 Given a sequence of stereo images you have to compute the translation and rotation between consecutive
 recordings. This transformations are then utilized to fuse the individual dense depth estimations.
 
-![Result](pcl_stereoimages/output/snapshot00.png)
+![Result](http://github.com/computeVision/pcl_stereoimages/blob/master/output/snapshot00.png)
 
 ## Installation
 pip install -r requirements.txt
