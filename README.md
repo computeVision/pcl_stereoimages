@@ -1,7 +1,7 @@
 # Rigid Motion Estimation
 Point Cloud Reproduction from Stereoimages.
 
-[![Build Status](https://travis-ci.org/tompollard/phd_thesis_markdown.svg?branch=master)](https://travis-ci.org/tompollard/phd_thesis_markdown)  
+<-- [![Build Status](https://travis-ci.org/tompollard/phd_thesis_markdown.svg?branch=master)](https://travis-ci.org/tompollard/phd_thesis_markdown)  --> 
 
 Source: [Report]( https://github.com/computeVision/pcl_stereoimages/blob/master/doc/report.pdf)
 
